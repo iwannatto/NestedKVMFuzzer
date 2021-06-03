@@ -28,13 +28,3 @@ int32_t forksrv_cycle(struct forksrv *forksrv, uint32_t child_pid);
 void forksrv_status(struct forksrv *forksrv, uint32_t status);
 uint8_t *forksrv_area_ptr(struct forksrv *forksrv);
 void forksrv_free(struct forksrv *forksrv);
-
-/* utils.c */
-struct option;
-const char *optstring_from_long_options(const struct option *opt);
-int taskset(int taskset_cpu);
-
-/* namespace.c */
-int netns_save();
-void netns_new();
-void netns_restore(int net_ns);

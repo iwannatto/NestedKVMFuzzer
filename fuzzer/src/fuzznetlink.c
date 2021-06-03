@@ -64,43 +64,6 @@ int main(int argc, char **argv)
 	int kvmfd = open("/dev/kvm", O_RDWR);
 	int vmfd = ioctl(kvmfd, KVM_CREATE_VM, 0);
 
-	// int netlink_fd =
-	// 	socket(AF_NETLINK, SOCK_RAW | SOCK_NONBLOCK, buf[0]);
-	// if (netlink_fd < 0) {
-	// 	goto error;
-	// }
-
-	// struct sockaddr_nl sa = {
-	// 	.nl_family = AF_NETLINK,
-	// 	.nl_groups = (buf[1] << 24) | (buf[2] << 16) |
-	// 		     (buf[3] << 8) | buf[4],
-	// };
-
-	// int r = bind(netlink_fd, (struct sockaddr *)&sa, sizeof(sa));
-	// if (r < 0) {
-	// 	goto error;
-	// }
-
-	// struct iovec iov = {&buf[5], buf_len - 5};
-	// struct sockaddr_nl sax = {
-	// 	.nl_family = AF_NETLINK,
-	// };
-	// struct msghdr msg = {&sax, sizeof(sax), &iov, 1, NULL, 0, 0};
-	// r = sendmsg(netlink_fd, &msg, 0);
-	// if (r != -1) {
-	// 	char buf[8192];
-	// 	struct iovec iov = {buf, sizeof(buf)};
-	// 	struct sockaddr_nl sa;
-	// 	struct msghdr msg = {&sa,  sizeof(sa), &iov, 1,
-	// 			     NULL, 0,	  0};
-	// 	recvmsg(netlink_fd, &msg, 0);
-	// }
-
-error:
-	// if (netlink_fd >= 0) {
-	// 	close(netlink_fd);
-	// }
-
 	/* STOP coverage */
 	if (kcov) {
 		kcov_len = kcov_disable(kcov);

@@ -37,8 +37,6 @@ int main(int argc, char **argv)
 
 	FILE *debugf = fopen("./debugf.txt", "a");
 
-	uint32_t child_pid = getpid() + 1;
-
 	uint8_t *afl_area_ptr = get_afl_area_ptr();
 
 	struct kcov *kcov = NULL;

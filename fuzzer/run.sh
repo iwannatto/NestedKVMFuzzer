@@ -11,4 +11,4 @@ rm debugf.txt
 
 AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1 \
     AFL_SKIP_CPUFREQ=1 \
-    ./AFLplusplus/afl-fuzz -i ./inp -o ./out -- ./fuzznetlink --dmesg dmesg.txt
+    ./AFLplusplus/afl-fuzz -i ./inp -o ./out -- ./fuzznetlink

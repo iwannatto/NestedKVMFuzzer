@@ -12,6 +12,25 @@
 
 #include "common.h"
 
+uint8_t *get_afl_area_ptr(void)
+{
+	uint8_t *afl_area_ptr = NULL;
+	const char *afl_shm_id_str = getenv("__AFL_SHM_ID");
+	if (afl_shm_id_str != NULL) {
+		int afl_shm_id = atoi(afl_shm_id_str);
+		// shm_id 0 is fine
+		afl_area_ptr = shmat(afl_shm_id, NULL, 0);
+	}
+
+	if (afl_area_ptr == NULL) {
+		FILE *debugf = fopen("./debugf.txt", "a");
+		fprintf(debugf, "afl_areta_ptr == NULL");
+		exit(EXIT_FAILURE);
+	}
+
+	return afl_area_ptr;
+}
+
 int main(int argc, char **argv)
 {
 	__AFL_COVERAGE_OFF();
@@ -20,12 +39,7 @@ int main(int argc, char **argv)
 
 	uint32_t child_pid = getpid() + 1;
 
-	struct forksrv *forksrv = forksrv_new();
-	fprintf(debugf, "hongu\n");
-	forksrv_welcome(forksrv); // ここで止まっているらしい
-	fprintf(debugf, "taiga\n");
-	uint8_t *afl_area_ptr = forksrv_area_ptr(forksrv);
-
+	uint8_t *afl_area_ptr = get_afl_area_ptr();
 
 	struct kcov *kcov = NULL;
 	uint64_t *kcov_cover_buf = NULL;
@@ -39,9 +53,6 @@ int main(int argc, char **argv)
 		PFATAL("open(/dev/kmsg)");
 	}
 	lseek(dmesg_fs, 0, SEEK_END);
-
-	/* Convince AFL we started a child. */
-	forksrv_cycle(forksrv, child_pid);
 
 	/* Load input from AFL (stdin) */
 	char buf[512 * 1024];
@@ -109,12 +120,8 @@ int main(int argc, char **argv)
 	}
 	if (crashed) {
 		fprintf(stderr, "[!] BUG detected\n");
-		forksrv_status(forksrv, 139);
-	} else {
-		forksrv_status(forksrv, 0);
 	}
 
-	forksrv_free(forksrv);
 	if (kcov) {
 		kcov_free(kcov);
 	}

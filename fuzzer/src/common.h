@@ -18,13 +18,3 @@ void kcov_enable(struct kcov *kcov);
 int kcov_disable(struct kcov *kcov);
 void kcov_free(struct kcov *kcov);
 uint64_t *kcov_cover(struct kcov *kcov);
-
-/* forksrv.c */
-struct forksrv;
-struct forksrv *forksrv_new(void);
-int forksrv_on(struct forksrv *forksrv);
-void forksrv_welcome(struct forksrv *forksrv);
-int32_t forksrv_cycle(struct forksrv *forksrv, uint32_t child_pid);
-void forksrv_status(struct forksrv *forksrv, uint32_t status);
-uint8_t *forksrv_area_ptr(struct forksrv *forksrv);
-void forksrv_free(struct forksrv *forksrv);

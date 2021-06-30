@@ -8,23 +8,28 @@
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
+#include <sys/shm.h>
 #include <unistd.h>
 
 #include "common.h"
 
+__AFL_COVERAGE();
+
+FILE *debugf = NULL;
+
 uint8_t *get_afl_area_ptr(void)
 {
+	// readabilty could be improved
 	uint8_t *afl_area_ptr = NULL;
 	const char *afl_shm_id_str = getenv("__AFL_SHM_ID");
 	if (afl_shm_id_str != NULL) {
 		int afl_shm_id = atoi(afl_shm_id_str);
-		// shm_id 0 is fine
 		afl_area_ptr = shmat(afl_shm_id, NULL, 0);
 	}
 
 	if (afl_area_ptr == NULL) {
 		FILE *debugf = fopen("./debugf.txt", "a");
-		fprintf(debugf, "afl_areta_ptr == NULL");
+		fprintf(debugf, "afl_areta_ptr == NULL\n");
 		exit(EXIT_FAILURE);
 	}
 
@@ -35,14 +40,17 @@ int main(int argc, char **argv)
 {
 	__AFL_COVERAGE_OFF();
 
-	FILE *debugf = fopen("./debugf.txt", "a");
+	debugf = fopen("./debugf_fuzznetlink.txt", "a");
 
 	uint8_t *afl_area_ptr = get_afl_area_ptr();
 
-	struct kcov *kcov = NULL;
-	uint64_t *kcov_cover_buf = NULL;
-	kcov = kcov_new();
-	kcov_cover_buf = kcov_cover(kcov);
+	fprintf(debugf, "main start\n");
+	fflush(debugf);
+
+	// struct kcov *kcov = NULL;
+	// uint64_t *kcov_cover_buf = NULL;
+	// kcov = kcov_new();
+	// kcov_cover_buf = kcov_cover(kcov);
 
 	/* Read on dmesg /dev/kmsg for crashes. */
 	int dmesg_fs = -1;
@@ -63,26 +71,67 @@ int main(int argc, char **argv)
 		buf_len = 5;
 	}
 
-	int kcov_len = 0;
+	// int kcov_len = 0;
 
-	/* START coverage collection on the current task. */
-	if (kcov) {
-		kcov_enable(kcov);
-	}
+	// /* START coverage collection on the current task. */
+	// if (kcov) {
+	// 	kcov_enable(kcov);
+	// }
 
-	int kvmfd = open("/dev/kvm", O_RDWR);
-	int vmfd = ioctl(kvmfd, KVM_CREATE_VM, 0);
+	// qemuをforkしてexecするコード
 
-	/* STOP coverage */
-	if (kcov) {
-		kcov_len = kcov_disable(kcov);
-	}
+	pid_t pid = fork();
+    if (pid < 0) {
+        fprintf(debugf, "fork failed\n");
+        exit(-1);
+    } else if (pid == 0) {
+		fprintf(debugf, "exec start\n");
+		fflush(debugf);
+        execl("./qemu/build/x86_64-softmmu/qemu-system-x86_64", "./qemu/build/x86_64-softmmu/qemu-system-x86_64",
+              "-nodefaults", "-machine", "accel=kvm", "-cpu", "host", "-m",
+              "128", "-bios", "./VMXbench/OVMF.fd", "-hda",
+              "json:{ \"fat-type\": 0, \"dir\": \"./VMXbench/image\", \"driver\": "
+              "\"vvfat\", \"floppy\": false, \"rw\": true }",
+              "-nographic", "-serial", "mon:stdio", "-no-reboot", NULL);
+        fprintf(debugf, "exec failed\n");
+        exit(-1);
+    }
+    int status;
+    pid_t r = waitpid(pid, &status, 0);
+    if (r < 0) {
+        fprintf(debugf, "waitpid failed");
+        exit(-1);
+    }
+    if (WIFEXITED(status)) {
+        fprintf(debugf, "child exit-code=%d\n", WEXITSTATUS(status));
+    } else {
+        fprintf(debugf, "child status=%04x\n", status);
+    }
+
+	// /* STOP coverage */
+	// if (kcov) {
+	// 	kcov_len = kcov_disable(kcov);
+	// }
+
+	FILE *coverage_file = fopen("/home/mizutani/NestedKVMFuzzer/fuzzer/coverage.bin", "rb");
+	int kcov_len;
+	fread(&kcov_len, sizeof(int), 1, coverage_file);
+	uint64_t *kcov_cover_buf = malloc(kcov_len * sizeof(uint64_t));
+	fread(kcov_cover_buf, sizeof(uint64_t), kcov_len, coverage_file);
+
+	fprintf(debugf, "kcov_len = %d\n", kcov_len);
+	fflush(debugf);
 
 	/* Read recorded %rip */
 	int i;
 	uint64_t afl_prev_loc = 0;
+	// srand((unsigned int)time(NULL));
 	for (i = 0; i < kcov_len; i++) {
+		if (i < 100)
+			fprintf(debugf, "kcov_cover_buf[%d + 1] = %lld\n", i, (long long int)kcov_cover_buf[i + 1]);
+
 		uint64_t current_loc = kcov_cover_buf[i + 1];
+		// uint64_t current_loc = rand();
 		uint64_t hash = hsiphash_static(&current_loc,
 						sizeof(unsigned long));
 		uint64_t mixed = (hash & 0xffff) ^ afl_prev_loc;
@@ -96,7 +145,6 @@ int main(int argc, char **argv)
 				* 128 on overflow. */
 			*s = 128;
 		}
-
 	}
 
 	/* Check dmesg if there was something interesting */
@@ -109,6 +157,8 @@ int main(int argc, char **argv)
 			break;
 		}
 
+		// fprintf(debugf, "%s\n", buf);
+
 		buf[r] = '\x00';
 		if (strstr(buf, "Call Trace") != NULL ||
 			strstr(buf, "RIP:") != NULL ||
@@ -117,11 +167,13 @@ int main(int argc, char **argv)
 		}
 	}
 	if (crashed) {
-		fprintf(stderr, "[!] BUG detected\n");
+		fprintf(debugf, "[!] BUG detected\n");
 	}
 
-	if (kcov) {
-		kcov_free(kcov);
-	}
+	// if (kcov) {
+	// 	kcov_free(kcov);
+	// }
+	fprintf(debugf, "main end\n");
+	fflush(debugf);
 	return 0;
 }

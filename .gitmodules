@@ -1,0 +1,9 @@
+[submodule "fuzzer/AFLplusplus"]
+	path = fuzzer/AFLplusplus
+	url = https://github.com/iwannatto/AFLplusplus.git
+[submodule "fuzzer/qemu"]
+	path = fuzzer/qemu
+	url = https://github.com/qemu/qemu.git
+[submodule "fuzzer/VMXbench"]
+	path = fuzzer/VMXbench
+	url = https://github.com/iwannatto/VMXbench.git

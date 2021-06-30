@@ -1,8 +1,11 @@
 fuzznetlink
 linux
 virtme
-AFLplusplus
 
 inp
 out
 debugf.txt
+
+/coverage.bin
+/debugf_fuzznetlink.txt
+/debugf_qemu.txt

@@ -7,8 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
-#include <sys/socket.h>
 #include <sys/shm.h>
+#include <sys/socket.h>
 #include <unistd.h>
 
 #include "common.h"
@@ -81,39 +81,42 @@ int main(int argc, char **argv)
 	// qemuをforkしてexecするコード
 
 	pid_t pid = fork();
-    if (pid < 0) {
-        fprintf(debugf, "fork failed\n");
-        exit(-1);
-    } else if (pid == 0) {
+	if (pid < 0) {
+		fprintf(debugf, "fork failed\n");
+		exit(-1);
+	} else if (pid == 0) {
 		fprintf(debugf, "exec start\n");
 		fflush(debugf);
-        execl("./qemu/build/x86_64-softmmu/qemu-system-x86_64", "./qemu/build/x86_64-softmmu/qemu-system-x86_64",
-              "-nodefaults", "-machine", "accel=kvm", "-cpu", "host", "-m",
-              "128", "-bios", "./VMXbench/OVMF.fd", "-hda",
-              "json:{ \"fat-type\": 0, \"dir\": \"./VMXbench/image\", \"driver\": "
-              "\"vvfat\", \"floppy\": false, \"rw\": true }",
-              "-nographic", "-serial", "mon:stdio", "-no-reboot", NULL);
-        fprintf(debugf, "exec failed\n");
-        exit(-1);
-    }
-    int status;
-    pid_t r = waitpid(pid, &status, 0);
-    if (r < 0) {
-        fprintf(debugf, "waitpid failed");
-        exit(-1);
-    }
-    if (WIFEXITED(status)) {
-        fprintf(debugf, "child exit-code=%d\n", WEXITSTATUS(status));
-    } else {
-        fprintf(debugf, "child status=%04x\n", status);
-    }
+		execl("./qemu/build/x86_64-softmmu/qemu-system-x86_64",
+		      "./qemu/build/x86_64-softmmu/qemu-system-x86_64",
+		      "-nodefaults", "-machine", "accel=kvm", "-cpu", "host",
+		      "-m", "128", "-bios", "./VMXbench/OVMF.fd", "-hda",
+		      "json:{ \"fat-type\": 0, \"dir\": \"./VMXbench/image\", "
+		      "\"driver\": "
+		      "\"vvfat\", \"floppy\": false, \"rw\": true }",
+		      "-nographic", "-serial", "mon:stdio", "-no-reboot", NULL);
+		fprintf(debugf, "exec failed\n");
+		exit(-1);
+	}
+	int status;
+	pid_t r = waitpid(pid, &status, 0);
+	if (r < 0) {
+		fprintf(debugf, "waitpid failed");
+		exit(-1);
+	}
+	if (WIFEXITED(status)) {
+		fprintf(debugf, "child exit-code=%d\n", WEXITSTATUS(status));
+	} else {
+		fprintf(debugf, "child status=%04x\n", status);
+	}
 
 	// /* STOP coverage */
 	// if (kcov) {
 	// 	kcov_len = kcov_disable(kcov);
 	// }
 
-	FILE *coverage_file = fopen("/home/mizutani/NestedKVMFuzzer/fuzzer/coverage.bin", "rb");
+	FILE *coverage_file = fopen(
+		"/home/mizutani/NestedKVMFuzzer/fuzzer/coverage.bin", "rb");
 	int kcov_len;
 	fread(&kcov_len, sizeof(int), 1, coverage_file);
 	uint64_t *kcov_cover_buf = malloc(kcov_len * sizeof(uint64_t));
@@ -128,12 +131,13 @@ int main(int argc, char **argv)
 	// srand((unsigned int)time(NULL));
 	for (i = 0; i < kcov_len; i++) {
 		if (i < 100)
-			fprintf(debugf, "kcov_cover_buf[%d + 1] = %lld\n", i, (long long int)kcov_cover_buf[i + 1]);
+			fprintf(debugf, "kcov_cover_buf[%d + 1] = %lld\n", i,
+				(long long int)kcov_cover_buf[i + 1]);
 
 		uint64_t current_loc = kcov_cover_buf[i + 1];
 		// uint64_t current_loc = rand();
-		uint64_t hash = hsiphash_static(&current_loc,
-						sizeof(unsigned long));
+		uint64_t hash =
+			hsiphash_static(&current_loc, sizeof(unsigned long));
 		uint64_t mixed = (hash & 0xffff) ^ afl_prev_loc;
 		afl_prev_loc = (hash & 0xffff) >> 1;
 
@@ -141,8 +145,8 @@ int main(int argc, char **argv)
 		int r = __builtin_add_overflow(*s, 1, s);
 		if (r) {
 			/* Boxing. AFL is fine with overflows,
-				* but we can be better. Drop down to
-				* 128 on overflow. */
+			 * but we can be better. Drop down to
+			 * 128 on overflow. */
 			*s = 128;
 		}
 	}
@@ -161,8 +165,8 @@ int main(int argc, char **argv)
 
 		buf[r] = '\x00';
 		if (strstr(buf, "Call Trace") != NULL ||
-			strstr(buf, "RIP:") != NULL ||
-			strstr(buf, "Code:") != NULL) {
+		    strstr(buf, "RIP:") != NULL ||
+		    strstr(buf, "Code:") != NULL) {
 			crashed += 1;
 		}
 	}

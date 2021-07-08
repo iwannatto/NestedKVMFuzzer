@@ -36,6 +36,15 @@ uint8_t *get_afl_area_ptr(void)
 	return afl_area_ptr;
 }
 
+void write_input_to_uefi_image(char *buf)
+{
+	FILE *f = fopen("./VMXbench/image/input.bin", "w");
+	if (fwrite(buf, sizeof(char), 4096, f) != 4096) {
+		fprintf(debugf, "write_input_to_image_file_failed\n");
+		exit(1);
+	}
+}
+
 int main(int argc, char **argv)
 {
 	__AFL_COVERAGE_OFF();
@@ -62,7 +71,7 @@ int main(int argc, char **argv)
 
 	/* Load input from AFL (stdin) */
 	char buf[512 * 1024];
-	memset(buf, 0, 32);
+	memset(buf, 0, 4096);
 	int buf_len = read(0, buf, sizeof(buf));
 	if (buf_len < 0) {
 		PFATAL("read(stdin)");
@@ -70,6 +79,8 @@ int main(int argc, char **argv)
 	if (buf_len < 5) {
 		buf_len = 5;
 	}
+
+	write_input_to_uefi_image(buf);
 
 	// int kcov_len = 0;
 

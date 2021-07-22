@@ -20,10 +20,10 @@ readonly out_dir=./results/"${current_datetime}"
 
 # use nohup to continue to run when ssh is disconnected
 
-nohup sudo \
+sudo \
     AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1 \
     AFL_SKIP_CPUFREQ=1 \
-    ./AFLplusplus/afl-fuzz -i ./inp -o "${out_dir}" -t 30000 -- ./fuzznetlink &
+    nohup ./AFLplusplus/afl-fuzz -i ./inp -o "${out_dir}" -t 30000 -- ./fuzznetlink &
 
 # save pid for kill.sh
 

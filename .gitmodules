@@ -7,3 +7,6 @@
 [submodule "fuzzer/VMXbench"]
 	path = fuzzer/VMXbench
 	url = https://github.com/iwannatto/VMXbench.git
+[submodule "linux-kcov/linux-kcov-src"]
+	path = linux-kcov/linux-kcov-src
+	url = https://github.com/iwannatto/linux-kcov-src.git

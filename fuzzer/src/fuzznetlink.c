@@ -9,6 +9,7 @@
 #include <sys/ioctl.h>
 #include <sys/shm.h>
 #include <sys/socket.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "common.h"
@@ -50,6 +51,18 @@ int main(int argc, char **argv)
 	__AFL_COVERAGE_OFF();
 
 	debugf = fopen("./debugf_fuzznetlink.txt", "a");
+
+	if (argc < 2) {
+		fprintf(debugf, "error: argc < 2\n");
+		exit(-1);
+	}
+	char *coverage_log_dirname = argv[1];
+	unsigned long long current_time = (unsigned long long)time(NULL);
+	fprintf(debugf, "here\n");
+	fflush(debugf);
+	char coverage_log_filename[200];
+	sprintf(coverage_log_filename, "%s/%llu.bin", coverage_log_dirname, current_time);
+	FILE *coverage_log_file = fopen(coverage_log_filename, "wb");
 
 	uint8_t *afl_area_ptr = get_afl_area_ptr();
 
@@ -126,15 +139,19 @@ int main(int argc, char **argv)
 	// 	kcov_len = kcov_disable(kcov);
 	// }
 
+	// read qemu's coverage from coverage file
 	FILE *coverage_file = fopen(
 		"/home/mizutani/NestedKVMFuzzer/fuzzer/coverage.bin", "rb");
-	int kcov_len;
-	fread(&kcov_len, sizeof(int), 1, coverage_file);
+	uint64_t kcov_len;
+	fread(&kcov_len, sizeof(uint64_t), 1, coverage_file);
 	uint64_t *kcov_cover_buf = malloc(kcov_len * sizeof(uint64_t));
 	fread(kcov_cover_buf, sizeof(uint64_t), kcov_len, coverage_file);
 
 	fprintf(debugf, "kcov_len = %d\n", kcov_len);
 	fflush(debugf);
+
+	// log coverage
+	fwrite(kcov_cover_buf, sizeof(uint64_t), kcov_len, coverage_log_file);
 
 	/* Read recorded %rip */
 	int i;

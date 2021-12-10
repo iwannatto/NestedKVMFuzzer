@@ -17,13 +17,19 @@ rm -f debugf_fuzznetlink.txt
 
 readonly current_datetime="$(date '+%Y%m%d_%H%M%S')"
 readonly out_dir=./results/"${current_datetime}"
+readonly coverage_log_dir="${out_dir}/coverage"
+
+mkdir "${out_dir}"
+mkdir "${coverage_log_dir}"
 
 # use nohup to continue to run when ssh is disconnected
 
+# for password
+sudo true
 sudo \
     AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1 \
     AFL_SKIP_CPUFREQ=1 \
-    nohup ./AFLplusplus/afl-fuzz -i ./inp -o "${out_dir}" -t 30000 -- ./fuzznetlink &
+    nohup ./AFLplusplus/afl-fuzz -i ./inp -o "${out_dir}" -t 30000 -- ./fuzznetlink "${coverage_log_dir}" &
 
 # save pid for kill.sh
 

@@ -5,8 +5,7 @@ import pathlib
 def read_into_array(coverage_dir_or_file_path):
     def read_from_file_into_array(filepath):
         file = open(filepath, "rb")
-        # first 8byte in coverage file is number of addresses, so skip it
-        array_ = array.array("L", file.read())[1:]
+        array_ = array.array("L", file.read())
         return array_
 
     if coverage_dir_or_file_path.is_file():

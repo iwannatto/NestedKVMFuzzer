@@ -23,6 +23,12 @@ def dir_or_file_path(s):
     else:
         raise FileNotFoundError
 
+def save_coverage_set_as_file(coverage_set, filename):
+    list_ = sorted(list(coverage_set))
+    list_ = list(map(lambda n: f"0x{n:016x}\n", list_))
+    with open(filename, "w") as f:
+        f.writelines(list_)
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("coverage_dir_or_file_1", type=dir_or_file_path)
@@ -41,6 +47,10 @@ def main():
     print("set1 only addresses:", len(set1_only_addresses), list(set1_only_addresses)[:10])
     print("set2 only addresses:", len(set2_only_addresses), list(set2_only_addresses)[:10])
     print("common addresses:", len(common_addresses), list(common_addresses)[:10])
+
+    save_coverage_set_as_file(set1_only_addresses, "set1_only.cov")
+    save_coverage_set_as_file(set2_only_addresses, "set2_only.cov")
+    save_coverage_set_as_file(common_addresses, "common.cov")
 
 if __name__ == "__main__":
     main()

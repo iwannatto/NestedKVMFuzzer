@@ -23,6 +23,13 @@ def dir_or_file_path(s):
     else:
         raise FileNotFoundError
 
+def dir_path(s):
+    p = dir_or_file_path(s)
+    if p.is_dir():
+        return p
+    else:
+        raise NotADirectoryError
+
 def save_coverage_set_as_file(coverage_set, filename):
     list_ = sorted(list(coverage_set))
     list_ = list(map(lambda n: f"0x{n:016x}\n", list_))
@@ -33,6 +40,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("coverage_dir_or_file_1", type=dir_or_file_path)
     parser.add_argument("coverage_dir_or_file_2", type=dir_or_file_path)
+    parser.add_argument("--output_dir", default=".", type=dir_path)
     args = parser.parse_args()
 
     coverage_array1 = read_into_array(args.coverage_dir_or_file_1)
@@ -48,9 +56,9 @@ def main():
     print("set2 only addresses:", len(set2_only_addresses), list(set2_only_addresses)[:10])
     print("common addresses:", len(common_addresses), list(common_addresses)[:10])
 
-    save_coverage_set_as_file(set1_only_addresses, "set1_only.cov")
-    save_coverage_set_as_file(set2_only_addresses, "set2_only.cov")
-    save_coverage_set_as_file(common_addresses, "common.cov")
+    save_coverage_set_as_file(set1_only_addresses, args.output_dir / "set1_only.cov")
+    save_coverage_set_as_file(set2_only_addresses, args.output_dir / "set2_only.cov")
+    save_coverage_set_as_file(common_addresses, args.output_dir / "common.cov")
 
 if __name__ == "__main__":
     main()

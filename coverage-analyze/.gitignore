@@ -1,2 +1,3 @@
-/*.cov
-/*.txt
+*.cov
+*.txt
+*.ctags

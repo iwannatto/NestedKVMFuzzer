@@ -1,12 +1,12 @@
 [submodule "fuzzer/AFLplusplus"]
 	path = fuzzer/AFLplusplus
-	url = https://github.com/iwannatto/AFLplusplus.git
+	url = git@github.com:iwannatto/AFLplusplus.git
 [submodule "fuzzer/qemu"]
 	path = fuzzer/qemu
-	url = https://github.com/qemu/qemu.git
+	url = git@github.com:iwannatto/qemu.git
 [submodule "fuzzer/VMXbench"]
 	path = fuzzer/VMXbench
-	url = https://github.com/iwannatto/VMXbench.git
+	url = git@github.com:iwannatto/VMXbench.git
 [submodule "linux-kcov/linux-kcov-src"]
 	path = linux-kcov/linux-kcov-src
-	url = https://github.com/iwannatto/linux-kcov-src.git
+	url = git@github.com:iwannatto/linux-kcov-src.git

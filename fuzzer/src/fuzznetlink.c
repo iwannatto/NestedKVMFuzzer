@@ -11,10 +11,14 @@
 #include <sys/socket.h>
 #include <time.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 #include "common.h"
 
+#ifdef AFL
 __AFL_COVERAGE();
+#endif
 
 FILE *debugf = NULL;
 
@@ -48,23 +52,28 @@ void write_input_to_uefi_image(char *buf)
 
 int main(int argc, char **argv)
 {
+#ifdef AFL
 	__AFL_COVERAGE_OFF();
+#endif
 
+	// open log file
+#ifdef AFL
 	debugf = fopen("./debugf_fuzznetlink.txt", "a");
+#else
+	debugf = stdout;
+#endif
+	if (debugf == NULL)
+		exit(EXIT_FAILURE);
+	fprintf(debugf, "debugf is opened\n");
 
 	if (argc < 2) {
 		fprintf(debugf, "error: argc < 2\n");
 		exit(-1);
 	}
-	char *coverage_log_dirname = argv[1];
-	unsigned long long current_time = (unsigned long long)time(NULL);
-	fprintf(debugf, "here\n");
-	fflush(debugf);
-	char coverage_log_filename[200];
-	sprintf(coverage_log_filename, "%s/%llu.bin", coverage_log_dirname, current_time);
-	FILE *coverage_log_file = fopen(coverage_log_filename, "wb");
 
+#ifdef AFL
 	uint8_t *afl_area_ptr = get_afl_area_ptr();
+#endif
 
 	fprintf(debugf, "main start\n");
 	fflush(debugf);
@@ -114,6 +123,7 @@ int main(int argc, char **argv)
 		execl("./qemu/build/x86_64-softmmu/qemu-system-x86_64",
 		      "./qemu/build/x86_64-softmmu/qemu-system-x86_64",
 		      "-nodefaults", "-machine", "accel=kvm", "-cpu", "host",
+			  "-smp", "1",
 		      "-m", "128", "-bios", "./VMXbench/OVMF.fd", "-hda",
 		      "json:{ \"fat-type\": 0, \"dir\": \"./VMXbench/image\", "
 		      "\"driver\": "
@@ -139,15 +149,31 @@ int main(int argc, char **argv)
 	// 	kcov_len = kcov_disable(kcov);
 	// }
 
+#ifndef AFL
+	// in standalone mode, coverage file is raw coverage file
+	// the program simply rename it to argv[1]/current_time.bin
+	char coverage_log_filename[200];
+	char *coverage_log_dirname = argv[1];
+	unsigned long long current_time = (unsigned long long)time(NULL);
+	sprintf(coverage_log_filename, "%s/%llu.bin", coverage_log_dirname, current_time);
+
+	if (rename("/home/mizutani/NestedKVMFuzzer/fuzzer/standalone_coverage.bin", coverage_log_filename) == -1) {
+		fprintf(debugf, "rename failed\n");
+		exit(EXIT_FAILURE);
+	}
+
+	return 0;
+#else
 	// read qemu's coverage from coverage file
 	FILE *coverage_file = fopen(
 		"/home/mizutani/NestedKVMFuzzer/fuzzer/coverage.bin", "rb");
+	fprintf(debugf, "coverage file is opened\n");
 	uint64_t kcov_len;
 	fread(&kcov_len, sizeof(uint64_t), 1, coverage_file);
 	uint64_t *kcov_cover_buf = malloc(kcov_len * sizeof(uint64_t));
 	fread(kcov_cover_buf, sizeof(uint64_t), kcov_len, coverage_file);
 
-	fprintf(debugf, "kcov_len = %d\n", kcov_len);
+	fprintf(debugf, "kcov_len = %lu\n", kcov_len);
 	fflush(debugf);
 
 	// log coverage
@@ -208,4 +234,5 @@ int main(int argc, char **argv)
 	fprintf(debugf, "main end\n");
 	fflush(debugf);
 	return 0;
+#endif
 }

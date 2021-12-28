@@ -1,15 +1,19 @@
-fuzznetlink
-linux
-virtme
+# executables
+/fuzznetlink
+/standalone_fuzznetlink
 
-inp
-out
-debugf.txt
-
-/results/
-
-/afl_pid.txt
-/coverage.bin
+# log files
 /debugf_fuzznetlink.txt
 /debugf_qemu.txt
+
+# for standalone fuzznetlink
+/standalone_coverage/
+/input_for_standalone_fuzznetlink.bin
+/standalone_coverage.bin
+
+# for fuzzing
+/inp/
+/out/
+/results/
+/afl_pid.txt
 /nohup.out

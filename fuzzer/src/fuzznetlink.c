@@ -33,8 +33,8 @@ uint8_t *get_afl_area_ptr(void)
 	}
 
 	if (afl_area_ptr == NULL) {
-		FILE *debugf = fopen("./debugf.txt", "a");
 		fprintf(debugf, "afl_areta_ptr == NULL\n");
+		fflush(debugf);
 		exit(EXIT_FAILURE);
 	}
 
@@ -46,7 +46,8 @@ void write_input_to_uefi_image(char *buf)
 	FILE *f = fopen("./VMXbench/image/input.bin", "w");
 	if (fwrite(buf, sizeof(char), 4096, f) != 4096) {
 		fprintf(debugf, "write_input_to_image_file_failed\n");
-		exit(1);
+		fflush(debugf);
+		exit(EXIT_FAILURE);
 	}
 }
 
@@ -65,10 +66,12 @@ int main(int argc, char **argv)
 	if (debugf == NULL)
 		exit(EXIT_FAILURE);
 	fprintf(debugf, "debugf is opened\n");
+	fflush(debugf);
 
 	if (argc < 2) {
 		fprintf(debugf, "error: argc < 2\n");
-		exit(-1);
+		fflush(debugf);
+		exit(EXIT_FAILURE);
 	}
 
 #ifdef AFL
@@ -104,19 +107,12 @@ int main(int argc, char **argv)
 
 	write_input_to_uefi_image(buf);
 
-	// int kcov_len = 0;
-
-	// /* START coverage collection on the current task. */
-	// if (kcov) {
-	// 	kcov_enable(kcov);
-	// }
-
 	// qemuをforkしてexecするコード
 
 	pid_t pid = fork();
 	if (pid < 0) {
 		fprintf(debugf, "fork failed\n");
-		exit(-1);
+		exit(EXIT_FAILURE);
 	} else if (pid == 0) {
 		fprintf(debugf, "exec start\n");
 		fflush(debugf);
@@ -130,26 +126,26 @@ int main(int argc, char **argv)
 		      "\"vvfat\", \"floppy\": false, \"rw\": true }",
 		      "-nographic", "-serial", "mon:stdio", "-no-reboot", NULL);
 		fprintf(debugf, "exec failed\n");
-		exit(-1);
+		fflush(debugf);
+		exit(EXIT_FAILURE);
 	}
 	int status;
 	pid_t r = waitpid(pid, &status, 0);
 	if (r < 0) {
 		fprintf(debugf, "waitpid failed");
-		exit(-1);
+		fflush(debugf);
+		exit(EXIT_FAILURE);
 	}
 	if (WIFEXITED(status)) {
 		fprintf(debugf, "child exit-code=%d\n", WEXITSTATUS(status));
+		fflush(debugf);
 	} else {
 		fprintf(debugf, "child status=%04x\n", status);
+		fflush(debugf);
 	}
 
-	// /* STOP coverage */
-	// if (kcov) {
-	// 	kcov_len = kcov_disable(kcov);
-	// }
-
 #ifndef AFL
+
 	// in standalone mode, coverage file is raw coverage file
 	// the program simply rename it to argv[1]/current_time.bin
 	char coverage_log_filename[200];
@@ -163,46 +159,20 @@ int main(int argc, char **argv)
 	}
 
 	return 0;
+
 #else
-	// read qemu's coverage from coverage file
-	FILE *coverage_file = fopen(
-		"/home/mizutani/NestedKVMFuzzer/fuzzer/coverage.bin", "rb");
-	fprintf(debugf, "coverage file is opened\n");
-	uint64_t kcov_len;
-	fread(&kcov_len, sizeof(uint64_t), 1, coverage_file);
-	uint64_t *kcov_cover_buf = malloc(kcov_len * sizeof(uint64_t));
-	fread(kcov_cover_buf, sizeof(uint64_t), kcov_len, coverage_file);
 
-	fprintf(debugf, "kcov_len = %lu\n", kcov_len);
-	fflush(debugf);
-
-	// log coverage
-	fwrite(kcov_cover_buf, sizeof(uint64_t), kcov_len, coverage_log_file);
-
-	/* Read recorded %rip */
-	int i;
-	uint64_t afl_prev_loc = 0;
-	// srand((unsigned int)time(NULL));
-	for (i = 0; i < kcov_len; i++) {
-		if (i < 100)
-			fprintf(debugf, "kcov_cover_buf[%d + 1] = %lld\n", i,
-				(long long int)kcov_cover_buf[i + 1]);
-
-		uint64_t current_loc = kcov_cover_buf[i + 1];
-		// uint64_t current_loc = rand();
-		uint64_t hash =
-			hsiphash_static(&current_loc, sizeof(unsigned long));
-		uint64_t mixed = (hash & 0xffff) ^ afl_prev_loc;
-		afl_prev_loc = (hash & 0xffff) >> 1;
-
-		uint8_t *s = &afl_area_ptr[mixed];
-		int r = __builtin_add_overflow(*s, 1, s);
-		if (r) {
-			/* Boxing. AFL is fine with overflows,
-			 * but we can be better. Drop down to
-			 * 128 on overflow. */
-			*s = 128;
-		}
+	FILE *fuzzing_bitmap = fopen("/home/mizutani/NestedKVMFuzzer/fuzzer/fuzzing_bitmap.bin", "rb");
+	if (fuzzing_bitmap == NULL) {
+		fprintf(debugf, "fopen failed\n");
+		fflush(debugf);
+		exit(EXIT_FAILURE);
+	}
+	int bitmap_size = 65536;
+	if (fread(afl_area_ptr, 1, bitmap_size, fuzzing_bitmap) != (size_t)bitmap_size) {
+		fprintf(debugf, "fread failed\n");
+		fflush(debugf);
+		exit(EXIT_FAILURE);
 	}
 
 	/* Check dmesg if there was something interesting */
@@ -234,5 +204,7 @@ int main(int argc, char **argv)
 	fprintf(debugf, "main end\n");
 	fflush(debugf);
 	return 0;
+
 #endif
+
 }

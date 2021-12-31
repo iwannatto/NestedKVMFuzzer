@@ -14,6 +14,7 @@ cd VMXbench; make; cd ..
 # run
 
 rm -f debugf_fuzznetlink.txt
+rm -f debugf_qemu.txt
 
 readonly current_datetime="$(date '+%Y%m%d_%H%M%S')"
 readonly out_dir=./results/"${current_datetime}"

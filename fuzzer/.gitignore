@@ -16,4 +16,5 @@
 /out/
 /results/
 /afl_pid.txt
+/fuzzing_bitmap.bin
 /nohup.out

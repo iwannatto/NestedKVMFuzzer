@@ -7,13 +7,13 @@ cd $(dirname $0)
 # build each component
 
 cd AFLplusplus; make source-only; cd ..
-make fuzznetlink
+make qemu_wrapper
 ./qemu/build.sh
 cd VMXbench; make; cd ..
 
 # run
 
-rm -f debugf_fuzznetlink.txt
+rm -f debugf_qemu_wrapper.txt
 rm -f debugf_qemu.txt
 
 readonly current_datetime="$(date '+%Y%m%d_%H%M%S')"
@@ -30,7 +30,7 @@ sudo true
 sudo \
     AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1 \
     AFL_SKIP_CPUFREQ=1 \
-    nohup ./AFLplusplus/afl-fuzz -i ./inp -o "${out_dir}" -t 30000 -- ./fuzznetlink "${coverage_log_dir}" &
+    nohup ./AFLplusplus/afl-fuzz -i ./inp -o "${out_dir}" -t 30000 -- ./qemu_wrapper "${coverage_log_dir}" &
 
 # save pid for kill.sh
 

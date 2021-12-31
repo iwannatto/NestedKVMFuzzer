@@ -1,14 +1,14 @@
 # executables
-/fuzznetlink
-/standalone_fuzznetlink
+/qemu_wrapper
+/standalone_qemu_wrapper
 
 # log files
-/debugf_fuzznetlink.txt
+/debugf_qemu_wrapper.txt
 /debugf_qemu.txt
 
-# for standalone fuzznetlink
+# for standalone qemu_wrapper
 /standalone_coverage/
-/input_for_standalone_fuzznetlink.bin
+/input_for_standalone_qemu_wrapper.bin
 /standalone_coverage.bin
 
 # for fuzzing

@@ -59,7 +59,7 @@ int main(int argc, char **argv)
 
 	// open log file
 #ifdef AFL
-	debugf = fopen("./debugf_fuzznetlink.txt", "a");
+	debugf = fopen("./debugf_qemu_wrapper.txt", "a");
 #else
 	debugf = stdout;
 #endif

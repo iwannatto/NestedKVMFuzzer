@@ -81,11 +81,6 @@ int main(int argc, char **argv)
 	fprintf(debugf, "main start\n");
 	fflush(debugf);
 
-	// struct kcov *kcov = NULL;
-	// uint64_t *kcov_cover_buf = NULL;
-	// kcov = kcov_new();
-	// kcov_cover_buf = kcov_cover(kcov);
-
 	/* Read on dmesg /dev/kmsg for crashes. */
 	int dmesg_fs = -1;
 	dmesg_fs = open("/dev/kmsg", O_RDONLY | O_NONBLOCK);
@@ -107,8 +102,7 @@ int main(int argc, char **argv)
 
 	write_input_to_uefi_image(buf);
 
-	// qemuをforkしてexecするコード
-
+	// qemu execution
 	pid_t pid = fork();
 	if (pid < 0) {
 		fprintf(debugf, "fork failed\n");
@@ -144,23 +138,7 @@ int main(int argc, char **argv)
 		fflush(debugf);
 	}
 
-#ifndef AFL
-
-	// in standalone mode, coverage file is raw coverage file
-	// the program simply rename it to argv[1]/current_time.bin
-	char coverage_log_filename[200];
-	char *coverage_log_dirname = argv[1];
-	unsigned long long current_time = (unsigned long long)time(NULL);
-	sprintf(coverage_log_filename, "%s/%llu.bin", coverage_log_dirname, current_time);
-
-	if (rename("/home/mizutani/NestedKVMFuzzer/fuzzer/standalone_coverage.bin", coverage_log_filename) == -1) {
-		fprintf(debugf, "rename failed\n");
-		exit(EXIT_FAILURE);
-	}
-
-	return 0;
-
-#else
+#ifdef AFL
 
 	FILE *fuzzing_bitmap = fopen("/home/mizutani/NestedKVMFuzzer/fuzzer/fuzzing_bitmap.bin", "rb");
 	if (fuzzing_bitmap == NULL) {
@@ -185,8 +163,6 @@ int main(int argc, char **argv)
 			break;
 		}
 
-		// fprintf(debugf, "%s\n", buf);
-
 		buf[r] = '\x00';
 		if (strstr(buf, "Call Trace") != NULL ||
 		    strstr(buf, "RIP:") != NULL ||
@@ -198,13 +174,23 @@ int main(int argc, char **argv)
 		fprintf(debugf, "[!] BUG detected\n");
 	}
 
-	// if (kcov) {
-	// 	kcov_free(kcov);
-	// }
-	fprintf(debugf, "main end\n");
-	fflush(debugf);
-	return 0;
+#else
+
+	// in standalone mode, coverage file is raw coverage file
+	// the program simply rename it to argv[1]/current_time.bin
+	char coverage_log_filename[200];
+	char *coverage_log_dirname = argv[1];
+	unsigned long long current_time = (unsigned long long)time(NULL);
+	sprintf(coverage_log_filename, "%s/%llu.bin", coverage_log_dirname, current_time);
+
+	if (rename("/home/mizutani/NestedKVMFuzzer/fuzzer/standalone_coverage.bin", coverage_log_filename) == -1) {
+		fprintf(debugf, "rename failed\n");
+		exit(EXIT_FAILURE);
+	}
 
 #endif
 
+	fprintf(debugf, "main end\n");
+	fflush(debugf);
+	return 0;
 }

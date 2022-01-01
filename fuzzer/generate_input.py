@@ -159,6 +159,8 @@ INDEX_CANDIDATES = [
 
 if __name__ == "__main__":
     with open("./inp/01.txt", "wb") as f:
-        for _ in range(1000):
+        for _ in range(4096 // 2 // 2):
             index = random.choice(INDEX_CANDIDATES)
             f.write(index.to_bytes(2, "little"))
+            value = random.getrandbits(16)
+            f.write(value.to_bytes(2, "little"))

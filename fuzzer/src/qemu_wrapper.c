@@ -68,11 +68,13 @@ int main(int argc, char **argv)
 	fprintf(debugf, "debugf is opened\n");
 	fflush(debugf);
 
+#ifndef AFL
 	if (argc < 2) {
-		fprintf(debugf, "error: argc < 2\n");
+		fprintf(debugf, "argument (output_file) is required\n");
 		fflush(debugf);
 		exit(EXIT_FAILURE);
 	}
+#endif
 
 #ifdef AFL
 	uint8_t *afl_area_ptr = get_afl_area_ptr();
@@ -177,13 +179,8 @@ int main(int argc, char **argv)
 #else
 
 	// in standalone mode, coverage file is raw coverage file
-	// the program simply rename it to argv[1]/current_time.bin
-	char coverage_log_filename[200];
-	char *coverage_log_dirname = argv[1];
-	unsigned long long current_time = (unsigned long long)time(NULL);
-	sprintf(coverage_log_filename, "%s/%llu.bin", coverage_log_dirname, current_time);
-
-	if (rename("/home/mizutani/NestedKVMFuzzer/fuzzer/standalone_coverage.bin", coverage_log_filename) == -1) {
+	// the program simply rename it to argv[1]
+	if (rename("/home/mizutani/NestedKVMFuzzer/fuzzer/standalone_coverage.bin", argv[1]) == -1) {
 		fprintf(debugf, "rename failed\n");
 		exit(EXIT_FAILURE);
 	}

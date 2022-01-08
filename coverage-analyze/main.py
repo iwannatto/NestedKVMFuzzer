@@ -1,20 +1,8 @@
 import argparse
-import array
 import pathlib
 
-def read_into_array(coverage_dir_or_file_path):
-    def read_from_file_into_array(filepath):
-        file = open(filepath, "rb")
-        array_ = array.array("L", file.read())
-        return array_
-
-    if coverage_dir_or_file_path.is_file():
-        return read_from_file_into_array(coverage_dir_or_file_path)
-    elif coverage_dir_or_file_path.is_dir():
-        array_ = array.array("L", [])
-        for filepath in coverage_dir_or_file_path.iterdir():
-            array_.extend(read_from_file_into_array(filepath))
-        return array_
+import compare_to_selftest
+import make_procedure
 
 def dir_or_file_path(s):
     p = pathlib.Path(s)
@@ -30,35 +18,24 @@ def dir_path(s):
     else:
         raise NotADirectoryError
 
-def save_coverage_set_as_file(coverage_set, filename):
-    list_ = sorted(list(coverage_set))
-    list_ = list(map(lambda n: f"0x{n:016x}\n", list_))
-    with open(filename, "w") as f:
-        f.writelines(list_)
-
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("coverage_dir_or_file_1", type=dir_or_file_path)
-    parser.add_argument("coverage_dir_or_file_2", type=dir_or_file_path)
-    parser.add_argument("--output_dir", default=".", type=dir_path)
+    # fuzzing_result_dir is like ../fuzzer/results/20211231_201627
+    parser.add_argument("fuzzing_result_dir", type=dir_path)
+    parser.add_argument("selftest_coverage_dir", type=dir_path)
+    parser.add_argument("--output_dir")
     args = parser.parse_args()
+    if args.output_dir:
+        args.output_dir = dir_path(args.output_dir)
+    else:
+        # default of output_dir is like ./20211231_201627
+        args.output_dir = pathlib.Path(".") / args.fuzzing_result_dir.name
 
-    coverage_array1 = read_into_array(args.coverage_dir_or_file_1)
-    coverage_array2 = read_into_array(args.coverage_dir_or_file_2)
+    args.output_dir.mkdir(exist_ok=True)
 
-    coverage_set1 = set(coverage_array1)
-    coverage_set2 = set(coverage_array2)
+    make_procedure.make_procedure(args.fuzzing_result_dir, args.output_dir)
 
-    set1_only_addresses = coverage_set1 - coverage_set2
-    set2_only_addresses = coverage_set2 - coverage_set1
-    common_addresses = coverage_set1 & coverage_set2
-    print("set1 only addresses:", len(set1_only_addresses), list(set1_only_addresses)[:10])
-    print("set2 only addresses:", len(set2_only_addresses), list(set2_only_addresses)[:10])
-    print("common addresses:", len(common_addresses), list(common_addresses)[:10])
-
-    save_coverage_set_as_file(set1_only_addresses, args.output_dir / "set1_only.cov")
-    save_coverage_set_as_file(set2_only_addresses, args.output_dir / "set2_only.cov")
-    save_coverage_set_as_file(common_addresses, args.output_dir / "common.cov")
+    compare_to_selftest.compare_to_selftest(args.output_dir, args.selftest_coverage_dir)
 
 if __name__ == "__main__":
     main()

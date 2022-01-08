@@ -1,3 +1,10 @@
+*.bin
+*.ubin
 *.cov
 *.txt
+
 *.ctags
+
+*.csv
+
+/__pycache__

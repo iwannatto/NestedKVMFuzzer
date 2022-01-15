@@ -2,11 +2,13 @@
 #include <getopt.h>
 #include <linux/kvm.h>
 #include <linux/netlink.h>
+#include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
+#include <sys/prctl.h>
 #include <sys/shm.h>
 #include <sys/socket.h>
 #include <time.h>
@@ -112,6 +114,7 @@ int main(int argc, char **argv)
 	} else if (pid == 0) {
 		fprintf(debugf, "exec start\n");
 		fflush(debugf);
+		prctl(PR_SET_PDEATHSIG, SIGKILL);
 		execl("./qemu/build/x86_64-softmmu/qemu-system-x86_64",
 		      "./qemu/build/x86_64-softmmu/qemu-system-x86_64",
 		      "-nodefaults", "-machine", "accel=kvm", "-cpu", "host",
